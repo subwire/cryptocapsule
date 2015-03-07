@@ -1,6 +1,7 @@
 import socket
 import os
 import re
+import optparse
 from cryptoutils import gen_temporal_keypair
 from netutils import *
 from base64 import b64decode, b64encode
