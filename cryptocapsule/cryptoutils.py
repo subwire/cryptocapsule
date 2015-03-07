@@ -116,8 +116,8 @@ def gen_temporal_keypair(masterkey, unixtime, salt):
 def generate_master_secret(secretfile):
     with open(secretfile,"w") as f:
         secret = Random.new().read(SALTLEN)
-        f.write(base64.encode(secret))
-    
+        f.write(base64.b64encode(secret))
+
 
 def split_key(key, n, k):
     """
