@@ -9,6 +9,8 @@ import struct
 import os
 import json
 import base64
+import OpenSSL
+import datetime
 
 # the character used for padding--with a block cipher such as AES, the value
 # you encrypt must be a multiple of BLOCK_SIZE in length.  This character is
@@ -118,6 +120,21 @@ def generate_master_secret(secretfile):
         secret = Random.new().read(SALTLEN)
         f.write(base64.b64encode(secret))
 
+def generate_key_cert(keyfile,certfile):
+    with open(keyfile,"w") as f:
+        key=OpenSSL.crypto.PKey()
+        key.generate_key(OpenSSL.crypto.TYPE_RSA, 2048)
+        f.write(OpenSSL.crypto.dump_privatekey(OpenSSL.crypto.FILETYPE_PEM, key))
+    with open(certfile,"w") as f:
+        cert = OpenSSL.crypto.X509()
+        subject = cert.get_subject()
+        subject.CN = b"localhost"
+        cert.gmtime_adj_notBefore(0)
+        cert.gmtime_adj_notAfter(60 * 60 * 24 * 365 * 100)
+        cert.set_pubkey(key)
+        cert.sign(key, b"sha1")
+        f.write(OpenSSL.crypto.dump_certificate(OpenSSL.crypto.FILETYPE_PEM, cert))
+        
 
 def split_key(key, n, k):
     """
