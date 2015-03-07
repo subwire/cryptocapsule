@@ -8,6 +8,28 @@ import base64
 import ssl
 import ssl
 
+
+def read_line(sock, maxchars=1000):
+    """
+    Read a full line from a socket.  If a \n does not appear in maxchars,
+    return None.  If the client stops sending before we get a \n,
+    return None
+    :param sock:
+    :param maxchars:
+    :return:
+    """
+    chrs = 0
+    line = ""
+    while chrs < maxchars:
+        c = sock.read(1)
+        if len(c) != 1:
+            return None
+        if c == "\n":
+            return line
+        line += c
+    return None
+
+
 # Client network functions
 
 
@@ -48,15 +70,6 @@ def select_server(serverlist):
         yield server
 
 
-def recvall(sock):
-    buf = ""
-    newdata = "abcd"
-    while len(newdata) > 0:
-        newdata = sock.recv(2048)
-        buf += newdata
-    return buf
-
-
 def send_query(buf, server):
     """
     Send query in buf to server
@@ -75,8 +88,11 @@ def send_query(buf, server):
 
         sslsock.sendall(buf)
 
-        response = recvall(sslsock)
-        return response
+        respstr = read_line
+        response = read_line(sslsock)
+        if not response:
+            return None
+        return response.split(":")
 
     # TODO: Better error handling
     except:
@@ -92,15 +108,19 @@ def get_pubkey(server, dectime, salt):
     :return: Return pubkey
     """
     msg = " ".join(["GETPRIV:", str(dectime), base64.b64encode(salt)]) + "\n"
-    return send_query(msg,server)
-    """
-    # WARNING: Don't forget the base64 the binary stuff first
-    # TODO: IMPLEMENT THIS
-    # Should put the args together, and call send_query
-    fake_masterkey = "blahblahblah"
-    _, pubkey = gen_temporal_keypair(fake_masterkey, dectime, salt)
-    return pubkey
-    """
+    resp = send_query(msg, server)
+    if "FAIL" in resp[0]:
+        if len(resp) >= 2:
+            print "ERROR getting pubkey: " + resp[1]
+            return None
+    elif "PUBKEY" in resp[0]:
+        if len(resp) >= 2:
+            return base64.b64decode(resp[1].strip())
+        else:
+            print "ERROR getting pubkey: unknown"
+            return None
+    return None
+
 
 def get_privkey(server, dectime, salt):
     """
@@ -111,19 +131,18 @@ def get_privkey(server, dectime, salt):
     :return: Return privkey, or None on failure
     """
     msg = " ".join(["GETPRIV:", str(dectime), base64.b64encode(salt)]) + "\n"
-    return send_query(msg,server)
-
-    """
-    # TODO: IMPLEMENT THIS
-    # Should put the args together, and call send_query
-    fake_masterkey = "blahblahblah"
-    if dectime < time.time():
-        privkey, _ = gen_temporal_keypair(fake_masterkey,dectime,salt)
-        return privkey
+    resp = send_query(msg,server)
+    if "FAIL" in resp[0]:
+        if len(resp) >= 2:
+            print "ERROR getting privkey: " + resp[1]
+            return None
+    elif "PRIVKEY" in resp[0]:
+        if len(resp) >= 2:
+            return base64.b64decode(resp[1].strip())
+        else:
+            print "ERROR getting privkey: unknown"
+            return None
     return None
-    """
-
-# Server functions
 
 
 def send_reply(buf, sock):
@@ -167,27 +186,6 @@ def send_error(msg, sock):
     """
     buf = "FAIL: " + msg + "\n"
     send_reply(buf, sock)
-
-
-def read_line(sock, maxchars=1000):
-    """
-    Read a full line from a socket.  If a \n does not appear in maxchars,
-    return None.  If the client stops sending before we get a \n,
-    return None
-    :param sock:
-    :param maxchars:
-    :return:
-    """
-    chrs = 0
-    line = ""
-    while chrs < maxchars:
-        c = sock.read(1)
-        if len(c) != 1:
-            return None
-        if c == "\n":
-            return line
-        line += c
-    return None
 
 
 def recv_query(sock):
