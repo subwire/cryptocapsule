@@ -6,6 +6,21 @@ import time
 from cryptoutils import gen_temporal_keypair
 
 
+# Client network functions
+
+
+def select_server(serverlist):
+    """
+    A generator that returns the next server to try.
+    TODO: Make this prefer a geographic distribution
+    :param serverlist:
+    :return:
+    """
+    # This is a stub
+    for server in serverlist:
+        yield server
+
+
 def send_query(buf, server):
     """
     Send query in buf to server
@@ -50,6 +65,35 @@ def get_privkey(server, dectime, salt):
     return None
 
 
+# Server functions
+
+def send_reply(buf, sock):
+    """
+    Send a reply to the client
+    :param buf:
+    :param sock:
+    :return:
+    """
+
+
+def send_privkey(key, sock):
+    """
+    Send a privkey to the client.  Don't forget to base64!!!
+    :param key:
+    :param sock:
+    :return:
+    """
+
+
+def send_pubkey(key, sock):
+    """
+    Send a pubkey to the client.  Don't forget to base64!!!
+    :param key:
+    :param sock:
+    :return:
+    """
+
+
 def recv_query(sock):
     """
     Given an open socket, return a tuple of the format:
@@ -64,11 +108,3 @@ def recv_query(sock):
     """
 
 
-
-def send_reply(buf, sock):
-    """
-    Send a reply to the client
-    :param buf:
-    :param sock:
-    :return:
-    """

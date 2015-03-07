@@ -4,7 +4,7 @@ import optparse
 import os
 import sys
 from cryptoutils import *
-from netutils import get_privkey, get_pubkey
+from netutils import get_privkey, get_pubkey, select_server
 
 
 def encrypt(filename,outfile,dectime,n,k,serverlist):

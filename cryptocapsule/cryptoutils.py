@@ -144,15 +144,3 @@ def join_key(pieces):
         print "Error recovering key!"
         return None
 
-
-def select_server(serverlist):
-    """
-    A generator that returns the next server to try.
-    TODO: Make this prefer a geographic distribution
-    :param serverlist:
-    :return:
-    """
-    # This is a stub
-    for server in serverlist:
-        yield server
-
