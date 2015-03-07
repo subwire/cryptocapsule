@@ -4,6 +4,7 @@ import re
 import struct
 import time
 from cryptoutils import gen_temporal_keypair
+import base64
 
 
 # Client network functions
@@ -70,10 +71,11 @@ def get_privkey(server, dectime, salt):
 def send_reply(buf, sock):
     """
     Send a reply to the client
-    :param buf:
-    :param sock:
+    :param buf: A string
+    :param sock: The socket
     :return:
     """
+    sock.sendAll(buf)
 
 
 def send_privkey(key, sock):
@@ -83,7 +85,8 @@ def send_privkey(key, sock):
     :param sock:
     :return:
     """
-
+    buf = "PRIVKEY: " + base64.b64encode(key) + "\n"
+    send_reply(buf,sock)
 
 def send_pubkey(key, sock):
     """
@@ -92,6 +95,19 @@ def send_pubkey(key, sock):
     :param sock:
     :return:
     """
+    buf = "PUBKEY: " + base64.b64encode(key) + "\n"
+    send_reply(buf,sock)
+
+
+def send_error(msg, sock):
+    """
+    Send an error message
+    :param msg:
+    :param sock:
+    :return:
+    """
+    buf = "FAIL: " + msg + "\n"
+    send_reply(buf,sock)
 
 
 def recv_query(sock):

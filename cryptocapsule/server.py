@@ -1,7 +1,7 @@
 import socket
 import os
 import re
-from cryptoutils import *
+from cryptoutils import gen_temporal_keypair
 from netutils import *
 from base64 import b64decode, b64encode
 from Crypto.Util.number import bytes_to_long, long_to_bytes
@@ -24,7 +24,7 @@ def do_command(sock, masterkey):
             salt = long(b64decode(cmd[2]))
             _, pubkey = gen_temporal_keypair(masterkey, dectime, salt)
             if pubkey:
-                send_reply("PUBKEY: " + b64encode(pubkey), sock)
+                send_pubkey(pubkey, sock)
             else:
                 raise RuntimeError("Invalid arguments")
         elif cmd[0] == "getpriv" and len(cmd) == 3:
@@ -34,7 +34,7 @@ def do_command(sock, masterkey):
             if dectime < time.time():
                 privkey, _ = gen_temporal_keypair(masterkey, dectime, salt)
                 if privkey:
-                    send_reply("PRIVKEY: " + b64encode(privkey), sock)
+                    send_privkey(privkey,sock)
                 else:
                     raise RuntimeError("Invalid arguments")
             else:
@@ -44,7 +44,9 @@ def do_command(sock, masterkey):
             raise RuntimeError("Invalid command")
     except RuntimeError, e:
         print "ERROR: ", e.message
-        send_reply("FAIL: " + e.message)
+        send_error(e.message)
+    finally:
+        sock.close()
 
 
 def listen(port, tlsprivkey, tlspubkey, masterkey):
