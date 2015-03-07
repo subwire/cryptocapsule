@@ -7,6 +7,7 @@ from netutils import *
 from base64 import b64decode, b64encode
 from Crypto.Util.number import bytes_to_long, long_to_bytes
 import time
+import ssl
 
 
 def do_command(sock, masterkey):
@@ -74,5 +75,7 @@ def parse_opts():
 
 if __name__ == '__main__':
     # TODO: Load master secret, load TLS keys, check clocks
+    s=socket.socket()
+    sslSocket=ssl.wrap_socket(s,keyfile='keyfile',certfile='certfile',ssl_version=ssl.PROTOCOL_TLSv1_2)
     opts, args = parse_opts()
     listen(opts.port, None, None, None)
