@@ -64,6 +64,9 @@ def parse_opts():
 
     options = optparse.OptionGroup(parser ,"OPTIONS")
     options.add_option("-p", help="Port to listen on", type="int", default=31337, dest="port")
+    options.add_option("--setup", help="Do first-run setup", action="store_true", dest="setup")
+    options,add_option("-s", "--secret", help="Path to the master secret", dest="secretfile")
+    
     parser.add_option_group(options)
 
     opts, args = parser.parse_args()
