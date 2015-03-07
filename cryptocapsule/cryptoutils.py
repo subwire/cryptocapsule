@@ -113,6 +113,12 @@ def gen_temporal_keypair(masterkey, unixtime, salt):
     return privkey, pubkey
 
 
+def generate_master_secret(secretfile):
+    with open(secretfile,"w") as f:
+        secret = Random.new().read(SALTLEN)
+        f.write(base64.encode(secret))
+    
+
 def split_key(key, n, k):
     """
     Split the key into k pieces, such that n of k are required to reproduce the key
