@@ -3,7 +3,116 @@
 import optparse
 import os
 import sys
-from cryptoutils import encrypt, decrypt
+from cryptoutils import *
+from netutils import get_privkey, get_pubkey
+
+
+def encrypt(filename,outfile,dectime,n,k,serverlist):
+    """
+    The main encrypt function.  Given a filename, outfile, n, k, serverlist:
+     1. Generate a salt of 128 random bytes
+     2. Gather sufficient EC pubkeys from servers
+     3. Generate a random symmetric key
+     4. Encrypt the file with the random symmetric key
+     5. Split the key into (n,k) pieces
+     6. Pack up all the metadata, and write it out
+
+    :param filename: The file to encrypt
+    :param outfile: The file to write to
+    :param dectime: The time for the file to be decryptable
+    :param n: Minimum number of servers needed to decrypt
+    :param k: Total number of servers
+    :param serverlist: The list of servers to pick from
+    :return: keypieces, salt
+    """
+    # First, this file needs a random key
+    randkey = Random.new().read(AESLEN)
+    # And a random salt
+    # TODO: Are we doing these in the right order to minimize crazy RNG prediction stuff?
+    salt = Random.new().read(SALTLEN)
+    eckeys = []
+    metadata = {}
+    # Now, go get some EC keys
+    selector = select_server(serverlist)
+    while len(eckeys) != k:
+        # Pick a server
+        try:
+            server = selector.next()
+        except StopIteration:
+            print "Could not get enough EC keys!"
+            return None
+        pubkey = get_pubkey(server, dectime, salt)
+        if pubkey is None:
+            print "Getting temporal public key from server " + server + " failed. Trying another..."
+        else:
+            eckeys.append((server, pubkey))
+    # Split the key
+    pieces = split_key(randkey, n, k)
+    enc_keybits = []
+    # Encrypt the pieces with EC keys
+    # FYI: eckey[0] is the server's hostname, and eckey[1] is the actual EC temporal public key
+    for (piece, eckey) in zip(pieces, eckeys):
+        enc_keybits.append((eckey[0], base64.b64encode(eckey[1].encrypt(piece))))
+    # Encrypt the file
+    encrypt_file(randkey, filename, outfile)
+
+    # Wrte out the metadata
+    metadata['dectime'] = dectime
+    metadata['salt'] = base64.b64encode(salt)
+    metadata['n'] = n
+    metadata['k'] = k
+    metadata['locks'] = enc_keybits
+    with open(outfile + ".ccapsule", "w+") as mdf:
+
+            json.dump(metadata, mdf)
+
+
+def decrypt(infile, metadatafile, outfile):
+    """
+    Decrypt a file, given the cryptoblob and metadata
+
+    1. Attempt to fetch temporal private keys from servers
+    2. If enough have been gathered, decrypt key pieces, re-assemble symmetric key
+    3. Decrypt file
+
+    :param infile: The cryptoblob
+    :param metadata: The CryptoCapsule metadata
+    :param outfile: The decrypted file
+    :return: n/a
+    """
+    metadata = {}
+    # Load the metadata
+    with open(metadatafile, "r") as mdf:
+        try:
+            metadata = json.load(mdf)
+        except:
+            print "Error loading metadata!"
+            return
+    salt = base64.b64decode(metadata['salt'])
+    dectime = metadata['dectime']
+    # Try to get private keys and decrypt key pieces
+    pieces = []
+    while len(pieces) < metadata['n']:
+        try:
+            server, blob = metadata['locks'].pop()
+        except:
+            print "Unable to gather enough keys to decrypt!"
+            return
+        privkey = get_privkey(server, dectime, salt)
+        if not privkey:
+            print "Error getting private key from " + server
+            continue
+        pieces.append(seccure.decrypt(base64.b64decode(blob), privkey, curve=mycurve))
+
+    # Now try to recover the key
+    symkey = join_key(pieces)
+    print repr(symkey)
+    if not symkey:
+        print "Unable to recover key!"
+        return
+
+    # Do the decryption
+    decrypt_file(symkey, infile, outfile)
 
 
 def parse_opts():
@@ -11,6 +120,8 @@ def parse_opts():
     commands = optparse.OptionGroup(parser, "COMMANDS")
     commands.add_option("-e", "--encrypt", help="Encrypt a file", action="store_true", dest="encrypt")
     commands.add_option("-d", "--decrypt", help="Decrypt a file", action="store_true", dest="decrypt")
+    parser.add_option_group(commands)
+
     options = optparse.OptionGroup(parser,"OPTIONS")
     options.add_option("-n", help="Minimum number of key pieces needed for recovery", type="int", default=10,
                        dest="n")
@@ -20,10 +131,12 @@ def parse_opts():
     options.add_option("-m", "--metadata", help="The metadadta file needed to decrypt a CryptoCapsule.  If not "
                                                 "specified, it may be automatically found")
     options.add_option("-l", "--server-list", help="Specify an alternative server list", dest="serverlist")
+    parser.add_option_group(options)
+
     opts, args = parser.parse_args()
     if not opts.encrypt and not opts.decrypt:
         parser.error("You must specify either -d or -e")
-    if not opts.time:
+    if opts.encrypt and not opts.time:
         parser.error("You must specify a time with -t")
     if len(args) < 2:
         parser.error("Please specify an input file and an output file")
@@ -58,4 +171,4 @@ if __name__ == '__main__':
     if opts.encrypt:
         encrypt(args[0], args[1], opts.time, opts.n, opts.k, serverlist)
     elif opts.decrypt:
-        decrypt(args[0],opts.metadata, args[1])
+        decrypt(args[0], opts.metadata, args[1])
