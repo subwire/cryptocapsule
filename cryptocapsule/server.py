@@ -57,6 +57,21 @@ def listen(port, tlsprivkey, tlspubkey, masterkey):
     :return:
     """
 
+
+def parse_opts():
+    parser = optparse.OptionParser(usage="Usage: ccapsuled [opts] infile outfile")
+
+    options = optparse.OptionGroup(parser ,"OPTIONS")
+    options.add_option("-p", help="Port to listen on", type="int", default=31337, dest="port")
+    parser.add_option_group(options)
+
+    opts, args = parser.parse_args()
+
+    return opts, args
+
+
+
 if __name__ == '__main__':
     # TODO: Load master secret, load TLS keys, check clocks
-    listen(31337, None, None, None)
+    opts, args = parse_opts()
+    listen(opts.port, None, None, None)

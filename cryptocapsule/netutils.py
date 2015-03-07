@@ -88,6 +88,7 @@ def send_privkey(key, sock):
     buf = "PRIVKEY: " + base64.b64encode(key) + "\n"
     send_reply(buf,sock)
 
+
 def send_pubkey(key, sock):
     """
     Send a pubkey to the client.  Don't forget to base64!!!
