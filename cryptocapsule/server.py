@@ -16,9 +16,9 @@ def do_command(sock, masterkey):
     """
     cmd = recv_query(sock)
     try:
-        # Format: getpub, dectime, salt
         if not cmd:
             raise RuntimeError("Invalid command")
+        # Format: getpub, dectime, salt
         if cmd[0] == "getpub" and len(cmd) == 3:
             dectime = long(cmd[1])
             salt = long(b64decode(cmd[2]))
@@ -34,7 +34,7 @@ def do_command(sock, masterkey):
             if dectime < time.time():
                 privkey, _ = gen_temporal_keypair(masterkey, dectime, salt)
                 if privkey:
-                    send_privkey(privkey,sock)
+                    send_privkey(privkey, sock)
                 else:
                     raise RuntimeError("Invalid arguments")
             else:
