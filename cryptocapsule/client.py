@@ -7,7 +7,7 @@ from cryptoutils import *
 from netutils import get_privkey, get_pubkey, select_server
 
 
-def encrypt(filename,outfile,dectime,n,k,serverlist):
+def encrypt(filename,outfile,dectime,n,k,serverlist, sslnoverify=False):
     """
     The main encrypt function.  Given a filename, outfile, n, k, serverlist:
      1. Generate a salt of 128 random bytes
@@ -41,7 +41,7 @@ def encrypt(filename,outfile,dectime,n,k,serverlist):
         except StopIteration:
             print "Could not get enough EC keys!"
             return None
-        pubkey = get_pubkey(server, dectime, salt)
+        pubkey = get_pubkey(server, dectime, salt, sslnoverify=sslnoverify)
         if pubkey is None:
             print "Getting temporal public key from server " + server + " failed. Trying another..."
         else:
@@ -52,7 +52,8 @@ def encrypt(filename,outfile,dectime,n,k,serverlist):
     # Encrypt the pieces with EC keys
     # FYI: eckey[0] is the server's hostname, and eckey[1] is the actual EC temporal public key
     for (piece, eckey) in zip(pieces, eckeys):
-        enc_keybits.append((eckey[0], base64.b64encode(eckey[1].encrypt(piece))))
+        enc_piece = ecc_encrypt_string(piece, eckey[1])
+        enc_keybits.append((eckey[0], base64.b64encode(enc_piece)))
     # Encrypt the file
     encrypt_file(randkey, filename, outfile)
 
@@ -67,7 +68,7 @@ def encrypt(filename,outfile,dectime,n,k,serverlist):
             json.dump(metadata, mdf)
 
 
-def decrypt(infile, metadatafile, outfile):
+def decrypt(infile, metadatafile, outfile, sslnoverify=False):
     """
     Decrypt a file, given the cryptoblob and metadata
 
@@ -98,15 +99,17 @@ def decrypt(infile, metadatafile, outfile):
         except:
             print "Unable to gather enough keys to decrypt!"
             return
-        privkey = get_privkey(server, dectime, salt)
+        privkey = get_privkey(server, dectime, salt, sslnoverify=sslnoverify)
         if not privkey:
             print "Error getting private key from " + server
             continue
         pieces.append(seccure.decrypt(base64.b64decode(blob), privkey, curve=mycurve))
 
     # Now try to recover the key
-    symkey = join_key(pieces)
-    print repr(symkey)
+    if metadata['n'] == 1 and metadata['k'] == 1:
+        symkey = pieces[0]
+    else:
+        symkey = join_key(pieces)
     if not symkey:
         print "Unable to recover key!"
         return
@@ -131,6 +134,8 @@ def parse_opts():
     options.add_option("-m", "--metadata", help="The metadadta file needed to decrypt a CryptoCapsule.  If not "
                                                 "specified, it may be automatically found")
     options.add_option("-l", "--server-list", help="Specify an alternative server list", dest="serverlist")
+    options.add_option("-S", "--disable-ssl-verification", help="Don't verify SSL certs of remote servers",
+                       action="store_true", dest="sslnoverify")
     parser.add_option_group(options)
 
     opts, args = parser.parse_args()
@@ -145,30 +150,26 @@ def parse_opts():
             opts.metadata = args[0] + ".ccapsule"
         else:
             parser.error("You must specify a metadata file with -m")
-
+    if not opts.serverlist:
+        parser.error("You must specify a server list.")
     return opts, args
 
 
 def load_serverlist(filename):
     serverlist = []
-    with open(filename,"r") as f:
+    with open(filename, "r") as f:
         for line in f.readlines():
             if not line.strip():
                 continue
-            serverlist.append(line)
+            serverlist.append(line.strip())
     return serverlist
 
 
 if __name__ == '__main__':
     opts, args = parse_opts()
-    if not opts.serverlist:
-        # TODO: When the server is implemented, remove this
-        serverlist = []
-        for x in range(0,opts.k):
-            serverlist.append('localhost')
-    else:
-        serverlist = load_serverlist(opts.serverlist)
+    # Load the server list
+    server_list = load_serverlist(opts.serverlist)
     if opts.encrypt:
-        encrypt(args[0], args[1], opts.time, opts.n, opts.k, serverlist)
+        encrypt(args[0], args[1], opts.time, opts.n, opts.k, server_list, sslnoverify=opts.sslnoverify)
     elif opts.decrypt:
-        decrypt(args[0], opts.metadata, args[1])
+        decrypt(args[0], opts.metadata, args[1], sslnoverify=opts.sslnoverify)

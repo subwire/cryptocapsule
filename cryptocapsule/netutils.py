@@ -70,7 +70,7 @@ def select_server(serverlist):
         yield server
 
 
-def send_query(buf, server):
+def send_query(buf, server, sslnoverify=False):
     """
     Send query in buf to server
     Return the reply, or None on a socket error
@@ -78,28 +78,32 @@ def send_query(buf, server):
     :param buf:
     :return: buf with a reply, or None on error
     """
+    print "Connecting to " + server
     try:
         s = socket.socket()
         s.connect((server, 31337))
         sslsock = ssl.wrap_socket(s)
         # TODO: more thorough SSL verification
-        if not check_host_name(sslsock.getpeercert(), server):
+        if not sslnoverify and not check_host_name(sslsock.getpeercert(), server):
             raise IOError("peer certificate does not match host name")
-
+        print "Connected to " + server
         sslsock.sendall(buf)
 
-        respstr = read_line
         response = read_line(sslsock)
         if not response:
+            print "Got invalid response from server"
             return None
         return response.split(":")
 
     # TODO: Better error handling
-    except:
+
+    except Exception, e:
+        print e.message
+        raise
         return None
 
 
-def get_pubkey(server, dectime, salt):
+def get_pubkey(server, dectime, salt, sslnoverify=False):
     """
     Contact the server, and get its EC key
     :param server:
@@ -107,8 +111,10 @@ def get_pubkey(server, dectime, salt):
     :param salt: The salt, 128-byte long
     :return: Return pubkey
     """
-    msg = " ".join(["GETPRIV:", str(dectime), base64.b64encode(salt)]) + "\n"
-    resp = send_query(msg, server)
+    msg = " ".join(["GETPUB:", str(dectime), base64.b64encode(salt)]) + "\n"
+    resp = send_query(msg, server, sslnoverify=sslnoverify)
+    if not resp:
+        return None
     if "FAIL" in resp[0]:
         if len(resp) >= 2:
             print "ERROR getting pubkey: " + resp[1]
@@ -122,7 +128,7 @@ def get_pubkey(server, dectime, salt):
     return None
 
 
-def get_privkey(server, dectime, salt):
+def get_privkey(server, dectime, salt, sslnoverify=False):
     """
     Contact the server, and get a private key, if possible
     :param server:
@@ -131,13 +137,16 @@ def get_privkey(server, dectime, salt):
     :return: Return privkey, or None on failure
     """
     msg = " ".join(["GETPRIV:", str(dectime), base64.b64encode(salt)]) + "\n"
-    resp = send_query(msg,server)
+    resp = send_query(msg, server, sslnoverify=sslnoverify)
+    if not resp:
+        return None
     if "FAIL" in resp[0]:
         if len(resp) >= 2:
             print "ERROR getting privkey: " + resp[1]
             return None
     elif "PRIVKEY" in resp[0]:
         if len(resp) >= 2:
+            print "Got private temporal key from " + server
             return base64.b64decode(resp[1].strip())
         else:
             print "ERROR getting privkey: unknown"

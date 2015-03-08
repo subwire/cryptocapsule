@@ -26,6 +26,8 @@ AESLEN = 16
 # Checked out safecurves.org for info on this
 mycurve = 'brainpoolp256r1'
 
+def ecc_encrypt_string(strng, pubkey):
+    return seccure.encrypt(strng, pubkey, pk_format=seccure.SER_BINARY, curve=mycurve)
 
 def encrypt_file(key, in_filename, out_filename, chunksize=64*1024):
     """ Encrypts a file using AES (CBC mode) with the
@@ -145,6 +147,8 @@ def split_key(key, n, k):
     :return: List of n key pieces as a list of STRINGS
     """
 
+    if n < 2 or k < 2:
+        return key
     # Re-encode binary key as hex string
 
     splitter = secretsharing.SecretSharer()
