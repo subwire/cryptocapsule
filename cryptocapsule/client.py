@@ -119,7 +119,9 @@ def decrypt(infile, metadatafile, outfile, sslnoverify=False):
 
 
 def parse_opts():
-    parser = optparse.OptionParser(usage="Usage: ccapsule [opts] infile outfile")
+    parser = optparse.OptionParser(usage="Usage: ccapsule <-e|-d> [opts] infile outfile\n" + 
+					 "Example: ccapsule -e -t 1426635888 -l mylist.txt -n 5 -k 10 deathstarplans.txt deathstarplans.enc\n" +
+                                         "         ccapsule -d deathstarplans.enc")
     commands = optparse.OptionGroup(parser, "COMMANDS")
     commands.add_option("-e", "--encrypt", help="Encrypt a file", action="store_true", dest="encrypt")
     commands.add_option("-d", "--decrypt", help="Decrypt a file", action="store_true", dest="decrypt")
