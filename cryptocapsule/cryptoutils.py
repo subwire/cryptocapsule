@@ -21,7 +21,7 @@ PADDING = '{'
 SALTLEN = 64
 
 # Length of the AES key
-AESLEN = 16
+AESLEN = 32
 
 # Checked out safecurves.org for info on this
 mycurve = 'brainpoolp256r1'
@@ -148,7 +148,7 @@ def split_key(key, n, k):
     """
 
     if n < 2 or k < 2:
-        return key
+        return [key]
     # Re-encode binary key as hex string
 
     splitter = secretsharing.SecretSharer()

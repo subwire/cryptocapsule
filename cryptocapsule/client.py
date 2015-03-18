@@ -55,8 +55,9 @@ def encrypt(filename,outfile,dectime,n,k,serverlist, sslnoverify=False):
         enc_piece = ecc_encrypt_string(piece, eckey[1])
         enc_keybits.append((eckey[0], base64.b64encode(enc_piece)))
     # Encrypt the file
+    print "Encrypting file..."
     encrypt_file(randkey, filename, outfile)
-
+    print "Saving locks..."
     # Wrte out the metadata
     metadata['dectime'] = dectime
     metadata['salt'] = base64.b64encode(salt)
@@ -145,6 +146,8 @@ def parse_opts():
         parser.error("You must specify either -d or -e")
     if opts.encrypt and not opts.time:
         parser.error("You must specify a time with -t")
+    if opts.n > opts.k:
+        parser.error("N must be less than or equal to K")
     if len(args) < 2:
         parser.error("Please specify an input file and an output file")
     if opts.decrypt and not opts.metadata:

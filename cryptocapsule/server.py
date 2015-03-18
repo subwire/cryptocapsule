@@ -51,7 +51,7 @@ def do_command(sock, masterkey):
             raise RuntimeError("Invalid command")
     except RuntimeError, e:
         print "ERROR: ", e.message
-        send_error(e.message)
+        send_error(e.message, sock)
     finally:
         sock.close()
 

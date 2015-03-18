@@ -86,7 +86,6 @@ def send_query(buf, server, sslnoverify=False):
         # TODO: more thorough SSL verification
         if not sslnoverify and not check_host_name(sslsock.getpeercert(), server):
             raise IOError("peer certificate does not match host name")
-        print "Connected to " + server
         sslsock.sendall(buf)
 
         response = read_line(sslsock)
