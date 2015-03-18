@@ -100,6 +100,7 @@ def decrypt(infile, metadatafile, outfile, sslnoverify=False):
         except:
             print "Unable to gather enough keys to decrypt!"
             return
+        server = tuple(server)
         privkey = get_privkey(server, dectime, salt, sslnoverify=sslnoverify)
         if not privkey:
             print "Error getting private key from " + server
@@ -114,7 +115,7 @@ def decrypt(infile, metadatafile, outfile, sslnoverify=False):
     if not symkey:
         print "Unable to recover key!"
         return
-
+    print "Decrypting file..."
     # Do the decryption
     decrypt_file(symkey, infile, outfile)
 
@@ -168,7 +169,9 @@ def load_serverlist(filename):
         for line in f.readlines():
             if not line.strip():
                 continue
-            serverlist.append(line.strip())
+            line = line.strip()
+            host, port = line.split(":")
+            serverlist.append((host, int(port)))
     return serverlist
 
 

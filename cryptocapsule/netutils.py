@@ -78,10 +78,10 @@ def send_query(buf, server, sslnoverify=False):
     :param buf:
     :return: buf with a reply, or None on error
     """
-    print "Connecting to " + server
+    print "Connecting to " + repr(server)
     try:
         s = socket.socket()
-        s.connect((server, 31337))
+        s.connect(server)
         sslsock = ssl.wrap_socket(s)
         # TODO: more thorough SSL verification
         if not sslnoverify and not check_host_name(sslsock.getpeercert(), server):
@@ -145,7 +145,7 @@ def get_privkey(server, dectime, salt, sslnoverify=False):
             return None
     elif "PRIVKEY" in resp[0]:
         if len(resp) >= 2:
-            print "Got private temporal key from " + server
+            print "Got private temporal key from " + repr(server)
             return base64.b64decode(resp[1].strip())
         else:
             print "ERROR getting privkey: unknown"
@@ -210,5 +210,8 @@ def recv_query(sock):
     """
 
     line = read_line(sock)
-    cmd = line.split(" ")
+    try:
+        cmd = line.split(" ")
+    except:
+        return None
     return cmd
