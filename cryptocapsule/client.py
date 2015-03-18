@@ -107,7 +107,7 @@ def decrypt(infile, metadatafile, outfile, sslnoverify=False):
         pieces.append(seccure.decrypt(base64.b64decode(blob), privkey, curve=mycurve))
 
     # Now try to recover the key
-    if metadata['n'] == 1 and metadata['k'] == 1:
+    if metadata['n'] == 1:
         symkey = pieces[0]
     else:
         symkey = join_key(pieces)
