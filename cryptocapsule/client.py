@@ -152,7 +152,7 @@ def parse_opts():
             opts.metadata = args[0] + ".ccapsule"
         else:
             parser.error("You must specify a metadata file with -m")
-    if not opts.serverlist:
+    if opts.encrypt and not opts.serverlist:
         parser.error("You must specify a server list.")
     return opts, args
 
