@@ -135,7 +135,7 @@ def parse_opts():
                        type="int", dest="time")
     options.add_option("-m", "--metadata", help="The metadadta file needed to decrypt a CryptoCapsule.  If not "
                                                 "specified, it may be automatically found")
-    options.add_option("-l", "--server-list", help="Specify an alternative server list", dest="serverlist")
+    options.add_option("-l", "--server-list", help="Specify an alternative server list.  List should be a return-separated list of hostnames or IP addresses", dest="serverlist")
     options.add_option("-S", "--disable-ssl-verification", help="Don't verify SSL certs of remote servers",
                        action="store_true", dest="sslnoverify")
     parser.add_option_group(options)
