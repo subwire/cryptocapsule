@@ -147,8 +147,8 @@ def split_key(key, n, k):
     :return: List of n key pieces as a list of STRINGS
     """
 
-    if n < 2 or k < 2:
-        return [key]
+    if n == 1:
+        return [key] * k
     # Re-encode binary key as hex string
 
     splitter = secretsharing.SecretSharer()

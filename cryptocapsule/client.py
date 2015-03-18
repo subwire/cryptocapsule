@@ -146,6 +146,8 @@ def parse_opts():
         parser.error("You must specify either -d or -e")
     if opts.encrypt and not opts.time:
         parser.error("You must specify a time with -t")
+    if opts.n <= 0 or opts.k <= 0:
+        parser.error("N and K must be positive and non-zero")
     if opts.n > opts.k:
         parser.error("N must be less than or equal to K")
     if len(args) < 2:
