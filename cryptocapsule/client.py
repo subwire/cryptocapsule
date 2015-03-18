@@ -169,9 +169,9 @@ def load_serverlist(filename):
 
 if __name__ == '__main__':
     opts, args = parse_opts()
-    # Load the server list
-    server_list = load_serverlist(opts.serverlist)
     if opts.encrypt:
+        # Load the server list
+        server_list = load_serverlist(opts.serverlist)
         encrypt(args[0], args[1], opts.time, opts.n, opts.k, server_list, sslnoverify=opts.sslnoverify)
     elif opts.decrypt:
         decrypt(args[0], opts.metadata, args[1], sslnoverify=opts.sslnoverify)
